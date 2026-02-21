@@ -18,8 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
+            'auth.monitor' => \App\Http\Middleware\AuthEndpointMonitor::class,
         ]);
 
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->appendToGroup('api', \App\Http\Middleware\AuthenticateWithTokenCookie::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

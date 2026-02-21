@@ -56,6 +56,31 @@ it('logs out and revokes token from bearer token', function () {
     expect(AuthAuditLog::query()->where('event', 'logout')->exists())->toBeTrue();
 });
 
+it('always returns success on logout without auth and expires cookie', function () {
+    $response = $this->postJson('/api/logout');
+
+    $response
+        ->assertOk()
+        ->assertJson(['message' => 'Logged out'])
+        ->assertCookieExpired('auth_token');
+});
+
+it('refreshes auth session and rotates bearer token cookie', function () {
+    $user = User::factory()->create();
+    $plainTextToken = $user->createToken('auth-token')->plainTextToken;
+
+    $response = $this
+        ->withHeader('Authorization', 'Bearer ' . $plainTextToken)
+        ->postJson('/api/auth/refresh');
+
+    $response
+        ->assertOk()
+        ->assertJson(['message' => 'Session refreshed'])
+        ->assertCookie('auth_token');
+
+    expect(AuthAuditLog::query()->where('event', 'token_refreshed')->exists())->toBeTrue();
+});
+
 it('redirects with structured error and request id when oauth callback fails', function () {
     Socialite::shouldReceive('driver')
         ->once()
@@ -97,5 +122,9 @@ it('allows admin user to access admin overview endpoint', function () {
             'users_total',
             'admins_total',
             'auth_events_total',
+            'auth_events_today',
+            'auth_events_last_7_days',
+            'auth_events_last_30_days',
+            'auth_events_by_type',
         ]);
 });

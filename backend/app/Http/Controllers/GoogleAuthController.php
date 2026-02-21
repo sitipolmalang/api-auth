@@ -10,6 +10,7 @@ use App\Support\Auth\GoogleUserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Carbon\CarbonImmutable;
 use Throwable;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -101,6 +102,29 @@ class GoogleAuthController extends Controller
         ])->withCookie($this->authFlow->forgetAuthCookie());
     }
 
+    public function refresh(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $token = $this->authFlow->issueAuthToken($user);
+
+        $this->auditLogger->log(
+            event: 'token_refreshed',
+            request: $request,
+            userId: $user->id,
+            email: $user->email,
+            context: ['reason' => 'sliding_session']
+        );
+
+        return response()->json([
+            'message' => 'Session refreshed',
+        ])->withCookie($this->authFlow->authCookie($token));
+    }
+
     public function me(Request $request)
     {
         return response()->json($request->user());
@@ -117,10 +141,31 @@ class GoogleAuthController extends Controller
 
     public function adminOverview()
     {
+        $now = CarbonImmutable::now();
+        $todayStart = $now->startOfDay();
+        $last7Days = $now->subDays(7);
+        $last30Days = $now->subDays(30);
+
+        $eventBreakdown = AuthAuditLog::query()
+            ->selectRaw('event, COUNT(*) as total')
+            ->groupBy('event')
+            ->orderByDesc('total')
+            ->pluck('total', 'event');
+
         return response()->json([
             'users_total' => User::query()->count(),
             'admins_total' => User::query()->where('role', User::ROLE_ADMIN)->count(),
             'auth_events_total' => AuthAuditLog::query()->count(),
+            'auth_events_today' => AuthAuditLog::query()
+                ->where('created_at', '>=', $todayStart)
+                ->count(),
+            'auth_events_last_7_days' => AuthAuditLog::query()
+                ->where('created_at', '>=', $last7Days)
+                ->count(),
+            'auth_events_last_30_days' => AuthAuditLog::query()
+                ->where('created_at', '>=', $last30Days)
+                ->count(),
+            'auth_events_by_type' => $eventBreakdown,
         ]);
     }
 

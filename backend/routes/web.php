@@ -8,7 +8,7 @@ Route::get('/', function () {
 });
 
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])
-    ->middleware('throttle:20,1');
+    ->middleware(['throttle:oauth-google', 'auth.monitor']);
 
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])
-    ->middleware('throttle:20,1');
+    ->middleware(['throttle:oauth-google', 'auth.monitor']);
