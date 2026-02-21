@@ -106,6 +106,15 @@ class GoogleAuthController extends Controller
         return response()->json($request->user());
     }
 
+    public function session(Request $request)
+    {
+        if (! $request->user()) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        return response()->noContent();
+    }
+
     public function adminOverview()
     {
         return response()->json([

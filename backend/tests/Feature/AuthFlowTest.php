@@ -23,6 +23,19 @@ it('authenticates /api/me for authenticated user', function () {
         ]);
 });
 
+it('returns 204 for a valid auth session', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/auth/session')
+        ->assertNoContent();
+});
+
+it('returns 401 for an invalid auth session', function () {
+    $this->getJson('/api/auth/session')
+        ->assertUnauthorized();
+});
+
 it('logs out and revokes token from bearer token', function () {
     $user = User::factory()->create();
     $plainTextToken = $user->createToken('auth-token')->plainTextToken;
