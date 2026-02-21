@@ -9,6 +9,11 @@ use Laravel\Socialite\Facades\Socialite;
 
 uses(RefreshDatabase::class);
 
+function authCookieName(): string
+{
+    return (string) env('AUTH_COOKIE_NAME', 'auth_token');
+}
+
 it('authenticates /api/me for authenticated user', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user);
@@ -50,7 +55,7 @@ it('logs out and revokes token from bearer token', function () {
     $response
         ->assertOk()
         ->assertJson(['message' => 'Logged out'])
-        ->assertCookieExpired('auth_token');
+        ->assertCookieExpired(authCookieName());
 
     expect(PersonalAccessToken::query()->find($token->id))->toBeNull();
     expect(AuthAuditLog::query()->where('event', 'logout')->exists())->toBeTrue();
@@ -62,7 +67,7 @@ it('always returns success on logout without auth and expires cookie', function 
     $response
         ->assertOk()
         ->assertJson(['message' => 'Logged out'])
-        ->assertCookieExpired('auth_token');
+        ->assertCookieExpired(authCookieName());
 });
 
 it('refreshes auth session and rotates bearer token cookie', function () {
@@ -76,7 +81,7 @@ it('refreshes auth session and rotates bearer token cookie', function () {
     $response
         ->assertOk()
         ->assertJson(['message' => 'Session refreshed'])
-        ->assertCookie('auth_token');
+        ->assertCookie(authCookieName());
 
     expect(AuthAuditLog::query()->where('event', 'token_refreshed')->exists())->toBeTrue();
 });

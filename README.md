@@ -104,6 +104,7 @@ ALERT_OAUTH_FAILED_COOLDOWN_SECONDS=120
 ### Frontend (`frontend/.env`)
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_AUTH_COOKIE_NAME=auth_token
 ```
 
 ## Validasi Lokal

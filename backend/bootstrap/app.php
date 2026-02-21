@@ -12,8 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $authCookieName = (string) env('AUTH_COOKIE_NAME', 'auth_token');
+
         $middleware->encryptCookies(except: [
-            'auth_token',
+            $authCookieName,
         ]);
 
         $middleware->alias([
