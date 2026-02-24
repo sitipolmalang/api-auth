@@ -4,8 +4,8 @@ import { getMyActivity } from "@/lib/api-auth";
 import { requireAuthUser } from "@/lib/server-auth";
 
 export default async function DashboardActivitiesPage() {
-  const { token, user } = await requireAuthUser();
-  const activityResult = await getMyActivity(token);
+  const { cookieHeader, user } = await requireAuthUser();
+  const activityResult = await getMyActivity(cookieHeader);
 
   if (activityResult.kind === "unauthorized" || activityResult.kind === "forbidden") {
     redirect("/401");

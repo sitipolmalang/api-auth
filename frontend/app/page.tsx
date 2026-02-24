@@ -1,12 +1,18 @@
 import { cookies } from "next/headers";
 import { AppLinkButton, AppPanel } from "@/lib/ui";
 import { hasValidSession } from "@/lib/auth-session";
-import { getAuthCookieName } from "@/lib/env";
+import { getSessionCookieNames } from "@/lib/env";
 
 export default async function HomePage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(getAuthCookieName())?.value;
-  const isLoggedIn = await hasValidSession(token);
+  const hasSessionCookie = getSessionCookieNames().some(
+    (cookieName) => Boolean(cookieStore.get(cookieName)?.value),
+  );
+  const cookieHeader = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
+  const isLoggedIn = hasSessionCookie ? await hasValidSession(cookieHeader) : false;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f5f7ff,_#f8fafc_45%,_#ffffff_80%)]">
@@ -68,7 +74,7 @@ export default async function HomePage() {
           </h2>
           <ul className="mt-4 space-y-3 text-sm text-zinc-600">
             <li>Laravel Socialite untuk OAuth Google</li>
-            <li>Sanctum token disimpan di cookie httpOnly</li>
+            <li>Sanctum session-first dengan stateful cookie</li>
             <li>Next.js route `/dashboard` diproteksi proxy</li>
           </ul>
         </AppPanel>

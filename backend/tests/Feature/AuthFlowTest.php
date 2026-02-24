@@ -3,16 +3,10 @@
 use App\Models\AuthAuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 use Laravel\Socialite\Facades\Socialite;
 
 uses(RefreshDatabase::class);
-
-function authCookieName(): string
-{
-    return (string) env('AUTH_COOKIE_NAME', 'auth_token');
-}
 
 function csrfGuardHeaderName(): string
 {
@@ -64,25 +58,19 @@ it('returns 401 for an invalid auth session', function () {
         ->assertUnauthorized();
 });
 
-it('logs out and revokes token from bearer token', function () {
+it('logs out authenticated user session', function () {
     $user = User::factory()->create();
-    $plainTextToken = $user->createToken('auth-token')->plainTextToken;
-    $token = PersonalAccessToken::findToken($plainTextToken);
-
-    expect($token)->not->toBeNull();
+    Sanctum::actingAs($user);
 
     $response = $this
-        ->withHeader('Authorization', 'Bearer ' . $plainTextToken)
         ->withHeader('Origin', trustedFrontendOrigin())
         ->withHeader(csrfGuardHeaderName(), csrfGuardHeaderValue())
         ->postJson('/api/logout');
 
     $response
         ->assertOk()
-        ->assertJson(['message' => 'Logged out'])
-        ->assertCookieExpired(authCookieName());
+        ->assertJson(['message' => 'Logged out']);
 
-    expect(PersonalAccessToken::query()->find($token->id))->toBeNull();
     expect(AuthAuditLog::query()->where('event', 'logout')->exists())->toBeTrue();
 });
 
@@ -93,30 +81,27 @@ it('returns 401 on logout without auth', function () {
         ->assertUnauthorized();
 });
 
-it('refreshes auth session and rotates bearer token cookie', function () {
+it('refreshes authenticated user session', function () {
     $user = User::factory()->create();
-    $plainTextToken = $user->createToken('auth-token')->plainTextToken;
+    Sanctum::actingAs($user);
 
     $response = $this
-        ->withHeader('Authorization', 'Bearer ' . $plainTextToken)
         ->withHeader('Origin', trustedFrontendOrigin())
         ->withHeader(csrfGuardHeaderName(), csrfGuardHeaderValue())
         ->postJson('/api/auth/refresh');
 
     $response
         ->assertOk()
-        ->assertJson(['message' => 'Session refreshed'])
-        ->assertCookie(authCookieName());
+        ->assertJson(['message' => 'Session refreshed']);
 
     expect(AuthAuditLog::query()->where('event', 'token_refreshed')->exists())->toBeTrue();
 });
 
 it('returns 419 when csrf guard header is missing on refresh', function () {
     $user = User::factory()->create();
-    $plainTextToken = $user->createToken('auth-token')->plainTextToken;
+    Sanctum::actingAs($user);
 
     $this
-        ->withHeader('Authorization', 'Bearer ' . $plainTextToken)
         ->withHeader('Origin', trustedFrontendOrigin())
         ->postJson('/api/auth/refresh')
         ->assertStatus(419)
@@ -125,10 +110,9 @@ it('returns 419 when csrf guard header is missing on refresh', function () {
 
 it('returns 403 when request origin is not trusted on refresh', function () {
     $user = User::factory()->create();
-    $plainTextToken = $user->createToken('auth-token')->plainTextToken;
+    Sanctum::actingAs($user);
 
     $this
-        ->withHeader('Authorization', 'Bearer ' . $plainTextToken)
         ->withHeader('Origin', 'https://evil.example')
         ->withHeader(csrfGuardHeaderName(), csrfGuardHeaderValue())
         ->postJson('/api/auth/refresh')

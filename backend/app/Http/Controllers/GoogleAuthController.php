@@ -8,6 +8,7 @@ use App\Support\Auth\AuthAuditLogger;
 use App\Support\Auth\AuthFlowService;
 use App\Support\Auth\GoogleUserService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\CarbonImmutable;
@@ -69,7 +70,8 @@ class GoogleAuthController extends Controller
             $googleUser->getName() ?: $googleUser->getNickname() ?: 'Google User'
         );
 
-        $token = $this->authFlow->issueAuthToken($user);
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
 
         $this->auditLogger->log(
             event: 'login_success',
@@ -79,8 +81,7 @@ class GoogleAuthController extends Controller
             context: ['provider' => 'google']
         );
 
-        return $this->authFlow->redirectWithSuccess()
-            ->withCookie($this->authFlow->authCookie($token));
+        return $this->authFlow->redirectWithSuccess();
     }
 
     public function logout(Request $request)
@@ -88,7 +89,8 @@ class GoogleAuthController extends Controller
         $userId = $request->user()?->id;
         $email = $request->user()?->email;
 
-        $this->authFlow->revokeCurrentToken($request);
+        Auth::guard('web')->logout();
+        $this->authFlow->logoutSession($request);
 
         $this->auditLogger->log(
             event: 'logout',
@@ -99,7 +101,7 @@ class GoogleAuthController extends Controller
 
         return response()->json([
             'message' => 'Logged out',
-        ])->withCookie($this->authFlow->forgetAuthCookie());
+        ]);
     }
 
     public function refresh(Request $request)
@@ -110,7 +112,7 @@ class GoogleAuthController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $token = $this->authFlow->issueAuthToken($user);
+        $this->authFlow->refreshSession($request);
 
         $this->auditLogger->log(
             event: 'token_refreshed',
@@ -122,7 +124,7 @@ class GoogleAuthController extends Controller
 
         return response()->json([
             'message' => 'Session refreshed',
-        ])->withCookie($this->authFlow->authCookie($token));
+        ]);
     }
 
     public function me(Request $request)

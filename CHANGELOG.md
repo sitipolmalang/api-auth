@@ -7,7 +7,15 @@ Format mengacu pada prinsip [Keep a Changelog](https://keepachangelog.com/), den
 ## [Unreleased]
 
 ### Added
-- Placeholder untuk perubahan berikutnya.
+- Fail-fast guard konfigurasi security production di backend (`AppServiceProvider`):
+  - `APP_URL` wajib HTTPS
+  - `SESSION_SECURE_COOKIE` wajib `true`
+  - `TRUSTED_FRONTEND_ORIGINS` dan `SANCTUM_STATEFUL_DOMAINS` wajib terisi
+- Checklist hardening production pada dokumentasi backend.
+
+### Changed
+- Sinkronisasi nama cookie session default menjadi `laravel-session` pada env examples.
+- Frontend guard session kini toleran terhadap dua format nama cookie (`laravel-session` dan `laravel_session`) untuk transisi konfigurasi.
 
 ## [v0.5.0] - 2026-02-24
 

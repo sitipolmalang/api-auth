@@ -8,7 +8,7 @@ Monorepo autentikasi berbasis Google OAuth untuk kebutuhan SaaS.
 ## Fitur Utama
 
 - Login Google OAuth
-- Session/token via cookie httpOnly (`auth_token`)
+- Session-first Sanctum via cookie httpOnly (`laravel-session`)
 - Sliding session refresh (`POST /api/auth/refresh`)
 - Halaman private `/dashboard`
 - Halaman admin `/dashboard/admin`
@@ -28,8 +28,7 @@ Monorepo autentikasi berbasis Google OAuth untuk kebutuhan SaaS.
 3. Google callback ke backend `GET /auth/google/callback`.
 4. Backend:
    - upsert user,
-   - terbitkan token Sanctum,
-   - simpan token ke cookie `auth_token`,
+   - login user ke session Sanctum (stateful),
    - redirect ke frontend `/auth/callback?login=success`.
 5. Frontend callback memvalidasi status login lalu redirect ke `/dashboard`.
 
@@ -51,7 +50,7 @@ Monorepo autentikasi berbasis Google OAuth untuk kebutuhan SaaS.
 - `GET /api/me` (`auth:sanctum`)
 - `GET /api/me/activity` (`auth:sanctum`, max 5 data)
 - `GET /api/admin/overview` (`auth:sanctum`, `role:admin`)
-- `POST /api/logout` (`auth:sanctum`, `trusted.frontend`, `csrf.guard`, revoke token + clear cookie)
+- `POST /api/logout` (`auth:sanctum`, `trusted.frontend`, `csrf.guard`)
 
 ## Quick Start
 
@@ -84,14 +83,12 @@ GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 
-AUTH_COOKIE_NAME=auth_token
-AUTH_TOKEN_TTL_MINUTES=10080
-AUTH_COOKIE_DOMAIN=
-AUTH_COOKIE_SAME_SITE=lax
-AUTH_COOKIE_SECURE=false
 CSRF_GUARD_HEADER_NAME=X-CSRF-Guard
 CSRF_GUARD_HEADER_VALUE=1
-SANCTUM_EXPIRATION=10080
+SESSION_COOKIE=laravel-session
+SESSION_SECURE_COOKIE=false
+SESSION_SAME_SITE=lax
+SANCTUM_STATEFUL_DOMAINS=localhost:3000,localhost,127.0.0.1:3000,127.0.0.1
 
 ADMIN_EMAILS=admin1@domain.com,admin2@domain.com
 RATE_LIMIT_OAUTH_GOOGLE=20
@@ -107,7 +104,8 @@ ALERT_OAUTH_FAILED_COOLDOWN_SECONDS=120
 ### Frontend (`frontend/.env`)
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_AUTH_COOKIE_NAME=auth_token
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+NEXT_PUBLIC_SESSION_COOKIE_NAME=laravel-session
 ```
 
 ## Validasi Lokal
@@ -128,8 +126,8 @@ npm run lint
 
 - Gunakan `APP_ENV=production` dan `APP_DEBUG=false`.
 - Jalankan backend/frontend di HTTPS.
-- Set `AUTH_COOKIE_SECURE=true`.
-- Isi `AUTH_COOKIE_DOMAIN` sesuai domain produksi.
+- Set `SESSION_SECURE_COOKIE=true`.
+- Isi `SESSION_DOMAIN` sesuai domain produksi.
 - Gunakan secret OAuth yang aman dan lakukan rotasi jika pernah terekspos.
 - Batasi CORS hanya untuk origin frontend produksi.
 

@@ -12,13 +12,11 @@ export async function POST(request: NextRequest) {
   const xsrfToken = request.cookies.get("XSRF-TOKEN")?.value;
 
   if (!hasSession) {
-    const response = NextResponse.json({ message: "Already logged out" }, { status: 200 });
-    sessionCookieNames.forEach((name) => response.cookies.delete(name));
-    return response;
+    return NextResponse.json({ message: "No active session" }, { status: 401 });
   }
 
   try {
-    const upstream = await fetch(`${getApiBaseUrl()}/api/logout`, {
+    const upstream = await fetch(`${getApiBaseUrl()}/api/auth/refresh`, {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -30,18 +28,11 @@ export async function POST(request: NextRequest) {
       cache: "no-store",
     });
 
-    const response = NextResponse.json(
-      { message: upstream.ok ? "Logged out" : "Logout failed" },
+    return NextResponse.json(
+      { message: upstream.ok ? "Session refreshed" : "Refresh failed" },
       { status: upstream.status },
     );
-
-    if (upstream.ok || upstream.status === 401) {
-      sessionCookieNames.forEach((name) => response.cookies.delete(name));
-      response.cookies.delete("XSRF-TOKEN");
-    }
-
-    return response;
   } catch {
-    return NextResponse.json({ message: "Logout upstream error" }, { status: 502 });
+    return NextResponse.json({ message: "Refresh upstream error" }, { status: 502 });
   }
 }

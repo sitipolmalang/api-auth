@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getApiBaseUrl } from "@/lib/env";
+import { getCsrfHeaders } from "@/lib/csrf";
 
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
@@ -9,12 +9,14 @@ export default function SessionRefresher() {
   useEffect(() => {
     const interval = window.setInterval(async () => {
       try {
-        await fetch(`${getApiBaseUrl()}/api/auth/refresh`, {
+        const csrfHeaders = await getCsrfHeaders();
+
+        await fetch("/api/auth/session/refresh", {
           method: "POST",
           credentials: "include",
           headers: {
             Accept: "application/json",
-            "X-CSRF-Guard": "1",
+            ...csrfHeaders,
           },
         });
       } catch {

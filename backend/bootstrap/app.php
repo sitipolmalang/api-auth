@@ -12,12 +12,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $authCookieName = (string) env('AUTH_COOKIE_NAME', 'auth_token');
-
-        $middleware->encryptCookies(except: [
-            $authCookieName,
-        ]);
-
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
             'auth.monitor' => \App\Http\Middleware\AuthEndpointMonitor::class,
@@ -25,8 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'trusted.frontend' => \App\Http\Middleware\EnsureTrustedFrontendOrigin::class,
         ]);
 
+        $middleware->statefulApi();
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
-        $middleware->appendToGroup('api', \App\Http\Middleware\AuthenticateWithTokenCookie::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

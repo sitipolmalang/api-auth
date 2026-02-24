@@ -4,10 +4,10 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getMe, type MeResponse } from "@/lib/api-auth";
-import { getAuthCookieName } from "@/lib/env";
+import { getSessionCookieNames } from "@/lib/env";
 
-const resolveUserByToken = cache(async (token: string): Promise<MeResponse> => {
-  const result = await getMe(token);
+const resolveUserByCookieHeader = cache(async (cookieHeader: string): Promise<MeResponse> => {
+  const result = await getMe(cookieHeader);
 
   if (result.kind === "unauthorized" || result.kind === "forbidden") {
     redirect("/401");
@@ -20,25 +20,32 @@ const resolveUserByToken = cache(async (token: string): Promise<MeResponse> => {
   return result.data;
 });
 
-export async function requireAuthUser(): Promise<{ token: string; user: MeResponse }> {
+export async function requireAuthUser(): Promise<{ cookieHeader: string; user: MeResponse }> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(getAuthCookieName())?.value;
+  const hasSessionCookie = getSessionCookieNames().some(
+    (cookieName) => Boolean(cookieStore.get(cookieName)?.value),
+  );
 
-  if (!token) {
+  if (!hasSessionCookie) {
     redirect("/401");
   }
 
-  const user = await resolveUserByToken(token);
+  const cookieHeader = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
 
-  return { token, user };
+  const user = await resolveUserByCookieHeader(cookieHeader);
+
+  return { cookieHeader, user };
 }
 
-export async function requireAdminUser(): Promise<{ token: string; user: MeResponse }> {
-  const { token, user } = await requireAuthUser();
+export async function requireAdminUser(): Promise<{ cookieHeader: string; user: MeResponse }> {
+  const { cookieHeader, user } = await requireAuthUser();
 
   if (user.role !== "admin") {
     redirect("/403");
   }
 
-  return { token, user };
+  return { cookieHeader, user };
 }

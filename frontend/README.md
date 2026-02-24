@@ -26,9 +26,9 @@ File: `proxy.ts`
 Aturan utama:
 - user belum login + akses `/dashboard` => redirect ke `/401`
 - user sudah login + akses `/login` => redirect ke `/dashboard`
-- user non-admin + akses `/dashboard/admin` => redirect ke `/403`
+- guard admin tetap ditegakkan di server component page (`requireAdminUser`)
 
-Status login divalidasi ke backend (`/api/auth/session`), bukan hanya cek keberadaan cookie.
+Proxy menggunakan keberadaan session cookie untuk gate awal, lalu data user/role diverifikasi ulang melalui backend pada server component.
 
 ## Komponen Reusable
 
@@ -60,7 +60,8 @@ Status login divalidasi ke backend (`/api/auth/session`), bukan hanya cek kebera
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_AUTH_COOKIE_NAME=auth_token
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+NEXT_PUBLIC_SESSION_COOKIE_NAME=laravel-session
 ```
 
 ## Menjalankan Frontend
@@ -82,11 +83,12 @@ npm run lint
 
 ### Berhenti di `/auth/callback`
 - cek URL mengandung `?login=success`
-- cek cookie sesuai `NEXT_PUBLIC_AUTH_COOKIE_NAME` berhasil dibuat oleh backend
+- cek cookie sesi backend berhasil dibuat (`SESSION_COOKIE`), misalnya `laravel-session`
+- pastikan `NEXT_PUBLIC_SESSION_COOKIE_NAME` sama dengan `SESSION_COOKIE` backend
 
 ### Selalu redirect ke `/401`
 - pastikan backend `/api/auth/session` dan `/api/me` bisa diakses saat cookie valid
-- cek konfigurasi cookie backend (`AUTH_COOKIE_*`)
+- cek konfigurasi cookie backend (`SESSION_*`)
 - pastikan `NEXT_PUBLIC_API_URL` benar
 
 ### Role admin tidak muncul di dashboard
@@ -96,7 +98,7 @@ npm run lint
 
 ### Logout terasa tidak konsisten
 - pastikan `POST /api/logout` mengembalikan `200`
-- frontend juga memanggil `/api/auth/session/revalidate` untuk invalidasi cache sesi
+- pastikan cookie session backend dan `NEXT_PUBLIC_SESSION_COOKIE_NAME` sinkron
 
 ### Warning preload font di browser
 - konfigurasi font utama sudah diset `preload: false` untuk mencegah warning preload yang tidak terpakai

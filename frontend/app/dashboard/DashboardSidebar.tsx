@@ -46,6 +46,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { getCsrfHeaders } from "@/lib/csrf";
 
 type SidebarUser = {
   name: string;
@@ -143,6 +144,8 @@ function SidebarUserProfile({ user }: { user: SidebarUser }) {
     let isSuccess = false;
 
     try {
+      await getCsrfHeaders();
+
       const logoutResponse = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",

@@ -4,9 +4,9 @@ import { requireAdminUser } from "@/lib/server-auth";
 import { AppLinkButton, AppPanel, InfoTile } from "@/lib/ui";
 
 export default async function AdminDashboardPage() {
-  const { token } = await requireAdminUser();
+  const { cookieHeader } = await requireAdminUser();
 
-  const overviewResult = await getAdminOverview(token);
+  const overviewResult = await getAdminOverview(cookieHeader);
 
   if (overviewResult.kind === "unauthorized") {
     redirect("/401");

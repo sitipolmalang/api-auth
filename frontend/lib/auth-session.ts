@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/lib/env";
+import { getApiBaseUrl, getFrontendUrl } from "@/lib/env";
 
 export type SessionCheckResult = {
   isValid: boolean;
@@ -11,8 +11,8 @@ export type AdminCheckResult =
   | { kind: "unauthorized"; shouldClearCookie: boolean }
   | { kind: "error" };
 
-export async function checkSession(token: string | undefined): Promise<SessionCheckResult> {
-  if (!token) {
+export async function checkSession(cookieHeader: string | undefined): Promise<SessionCheckResult> {
+  if (!cookieHeader) {
     return { isValid: false, shouldClearCookie: false };
   }
 
@@ -21,7 +21,8 @@ export async function checkSession(token: string | undefined): Promise<SessionCh
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${token}`,
+        Cookie: cookieHeader,
+        Origin: getFrontendUrl(),
       },
       cache: "no-store",
     });
@@ -36,13 +37,13 @@ export async function checkSession(token: string | undefined): Promise<SessionCh
   }
 }
 
-export async function hasValidSession(token: string | undefined): Promise<boolean> {
-  const result = await checkSession(token);
+export async function hasValidSession(cookieHeader: string | undefined): Promise<boolean> {
+  const result = await checkSession(cookieHeader);
   return result.isValid;
 }
 
-export async function checkAdminRole(token: string | undefined): Promise<AdminCheckResult> {
-  if (!token) {
+export async function checkAdminRole(cookieHeader: string | undefined): Promise<AdminCheckResult> {
+  if (!cookieHeader) {
     return { kind: "unauthorized", shouldClearCookie: false };
   }
 
@@ -51,7 +52,8 @@ export async function checkAdminRole(token: string | undefined): Promise<AdminCh
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${token}`,
+        Cookie: cookieHeader,
+        Origin: getFrontendUrl(),
       },
       cache: "no-store",
     });

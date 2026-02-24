@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/lib/env";
+import { getApiBaseUrl, getFrontendUrl } from "@/lib/env";
 
 export type MeResponse = {
   id: number;
@@ -37,12 +37,13 @@ export type ApiResult<T> =
   | ApiResultForbidden
   | ApiResultError;
 
-async function fetchAuthed<T>(path: string, token: string): Promise<ApiResult<T>> {
+async function fetchAuthed<T>(path: string, cookieHeader: string): Promise<ApiResult<T>> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     method: "GET",
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${token}`,
+      Cookie: cookieHeader,
+      Origin: getFrontendUrl(),
     },
     cache: "no-store",
   });
@@ -62,14 +63,14 @@ async function fetchAuthed<T>(path: string, token: string): Promise<ApiResult<T>
   return { kind: "ok", data: (await response.json()) as T };
 }
 
-export function getMe(token: string) {
-  return fetchAuthed<MeResponse>("/api/me", token);
+export function getMe(cookieHeader: string) {
+  return fetchAuthed<MeResponse>("/api/me", cookieHeader);
 }
 
-export function getMyActivity(token: string) {
-  return fetchAuthed<ActivityItem[]>("/api/me/activity", token);
+export function getMyActivity(cookieHeader: string) {
+  return fetchAuthed<ActivityItem[]>("/api/me/activity", cookieHeader);
 }
 
-export function getAdminOverview(token: string) {
-  return fetchAuthed<AdminOverview>("/api/admin/overview", token);
+export function getAdminOverview(cookieHeader: string) {
+  return fetchAuthed<AdminOverview>("/api/admin/overview", cookieHeader);
 }

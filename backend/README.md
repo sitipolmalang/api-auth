@@ -1,6 +1,6 @@
 # Backend (Laravel 12)
 
-Backend bertanggung jawab untuk OAuth Google, manajemen token/cookie, role, audit log autentikasi, rate limit, dan monitoring endpoint auth.
+Backend bertanggung jawab untuk OAuth Google, manajemen session Sanctum, role, audit log autentikasi, rate limit, dan monitoring endpoint auth.
 
 ## Arsitektur Ringkas
 
@@ -8,8 +8,7 @@ Backend bertanggung jawab untuk OAuth Google, manajemen token/cookie, role, audi
   - endpoint OAuth (`redirect`, `callback`)
   - endpoint auth API (`session`, `refresh`, `me`, `myActivity`, `logout`, `adminOverview`)
 - `app/Support/Auth/AuthFlowService.php`
-  - issue/revoke token Sanctum
-  - set/clear cookie auth
+  - lifecycle session auth (refresh/logout)
   - redirect sukses/gagal auth
 - `app/Support/Auth/GoogleUserService.php`
   - sinkronisasi data user Google ke tabel `users`
@@ -18,8 +17,6 @@ Backend bertanggung jawab untuk OAuth Google, manajemen token/cookie, role, audi
   - pencatatan event auth ke `auth_audit_logs`
   - deteksi lonjakan `oauth_failed` berbasis cache window
   - retensi otomatis: simpan hanya 5 data terbaru per scope
-- `app/Http/Middleware/AuthenticateWithTokenCookie.php`
-  - membaca cookie `auth_token` lalu injeksi bearer token ke request
 - `app/Http/Middleware/EnsureRole.php`
   - middleware `role:admin` untuk endpoint admin
 - `app/Http/Middleware/AuthEndpointMonitor.php`
@@ -89,14 +86,12 @@ GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 
-AUTH_COOKIE_NAME=auth_token
-AUTH_TOKEN_TTL_MINUTES=10080
-AUTH_COOKIE_DOMAIN=
-AUTH_COOKIE_SAME_SITE=lax
-AUTH_COOKIE_SECURE=false
 CSRF_GUARD_HEADER_NAME=X-CSRF-Guard
 CSRF_GUARD_HEADER_VALUE=1
-SANCTUM_EXPIRATION=10080
+SESSION_COOKIE=laravel-session
+SESSION_SECURE_COOKIE=false
+SESSION_SAME_SITE=lax
+SANCTUM_STATEFUL_DOMAINS=localhost:3000,localhost,127.0.0.1:3000,127.0.0.1
 
 ADMIN_EMAILS=
 RATE_LIMIT_OAUTH_GOOGLE=20
@@ -124,6 +119,25 @@ php artisan serve
 ```bash
 vendor/bin/pest --filter AuthFlowTest
 ```
+
+## Hardening Production
+
+Set minimum berikut saat deploy:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://api.example.com
+SESSION_SECURE_COOKIE=true
+SESSION_SAME_SITE=lax
+SESSION_DOMAIN=.example.com
+TRUSTED_FRONTEND_ORIGINS=https://app.example.com
+SANCTUM_STATEFUL_DOMAINS=app.example.com
+```
+
+Catatan:
+- aplikasi akan fail-fast saat boot di production jika `APP_URL` belum HTTPS, `SESSION_SECURE_COOKIE=false`, atau whitelist origin/stateful domain kosong.
+- endpoint web frontend tetap session-first (cookie + CSRF), bukan bearer token.
 
 ## Troubleshooting
 
