@@ -135,7 +135,15 @@ npm run lint
 
 - Backend: `backend/README.md`
 - Frontend: `frontend/README.md`
+- Deployment checklist: `docs/DEPLOYMENT_CHECKLIST.md`
 - Riwayat perubahan: `CHANGELOG.md`
+
+## CI Gate
+
+Workflow GitHub Actions tersedia di `.github/workflows/ci.yml` dengan 3 gate:
+- backend auth tests (`AuthFlowTest`)
+- frontend lint + build
+- strict auth security config (`php artisan auth:config-check --strict`)
 
 ## Panduan Rilis Singkat
 

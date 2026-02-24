@@ -12,6 +12,9 @@ Format mengacu pada prinsip [Keep a Changelog](https://keepachangelog.com/), den
   - `SESSION_SECURE_COOKIE` wajib `true`
   - `TRUSTED_FRONTEND_ORIGINS` dan `SANCTUM_STATEFUL_DOMAINS` wajib terisi
 - Checklist hardening production pada dokumentasi backend.
+- Command `php artisan auth:config-check` untuk validasi konfigurasi auth/security (`--strict` untuk aturan production).
+- Dokumen rilis operasional: `docs/DEPLOYMENT_CHECKLIST.md`.
+- Workflow CI `.github/workflows/ci.yml` dengan gate backend test, frontend lint/build, dan strict auth config check.
 
 ### Changed
 - Sinkronisasi nama cookie session default menjadi `laravel-session` pada env examples.

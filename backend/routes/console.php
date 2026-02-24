@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Auth\AuthSecurityConfigChecker;
 use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -28,3 +29,27 @@ Artisan::command('auth:role {email} {role}', function (string $email, string $ro
     $this->info("Role {$email} berhasil diubah menjadi {$normalizedRole}.");
     return self::SUCCESS;
 })->purpose('Set role user berdasarkan email (user/admin)');
+
+Artisan::command('auth:config-check {--strict}', function () {
+    /** @var AuthSecurityConfigChecker $checker */
+    $checker = app(AuthSecurityConfigChecker::class);
+    $result = $checker->inspect((bool) $this->option('strict'));
+
+    if ($result['warnings'] !== []) {
+        $this->warn('Warnings:');
+        foreach ($result['warnings'] as $warning) {
+            $this->line("- {$warning}");
+        }
+    }
+
+    if ($result['issues'] !== []) {
+        $this->error('Issues:');
+        foreach ($result['issues'] as $issue) {
+            $this->line("- {$issue}");
+        }
+        return self::FAILURE;
+    }
+
+    $this->info('Auth/security configuration check passed.');
+    return self::SUCCESS;
+})->purpose('Validasi konfigurasi auth/security (gunakan --strict untuk aturan production)');

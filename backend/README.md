@@ -118,6 +118,8 @@ php artisan serve
 
 ```bash
 vendor/bin/pest --filter AuthFlowTest
+php artisan auth:config-check
+php artisan auth:config-check --strict
 ```
 
 ## Hardening Production
